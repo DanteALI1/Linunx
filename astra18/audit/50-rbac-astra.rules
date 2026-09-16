@@ -1,33 +1,13 @@
 ## /etc/audit/rules.d/50-rbac-astra.rules
-## Astra Linux SE 1.8 — auditd + интеграция с audisp-parsec
-## Применить: augenrules --load  или  systemctl restart auditd
+## УЗ установки/изменения: ТОЛЬКО root или svcsecadmin (консоль)
+## Astra Linux SE 1.8 — RBAC + Wazuh (+ audisp-parsec отдельно)
+## Каталог описаний: docs/manual/06-auditd-rules-catalog.md
 
--a always,exit -F arch=b64 -S execve -F path=/usr/bin/apt -F key=pkg_mgr
--a always,exit -F arch=b64 -S execve -F path=/usr/bin/apt-get -F key=pkg_mgr
--a always,exit -F arch=b64 -S execve -F path=/usr/bin/dpkg -F key=pkg_mgr
 -a always,exit -F arch=b64 -S execve -F path=/usr/bin/systemctl -F key=systemctl
--a always,exit -F arch=b64 -S execve -F path=/usr/sbin/visudo -F key=sudoers_change
 -a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/svcsec-super -F key=svcsec_super
 -a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/approve-artifact -F key=artifact_approve
 -a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/timeditor-grant -F key=timeditor_grant
 -a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/timeditor-expire -F key=timeditor_expire
-
-## PARSEC admin tools
--a always,exit -F arch=b64 -S execve -F path=/usr/sbin/pdpl-user -F key=parsec_admin
--a always,exit -F arch=b64 -S execve -F path=/usr/sbin/usercaps -F key=parsec_admin
--a always,exit -F arch=b64 -S execve -F path=/usr/sbin/pdp-ls -F key=parsec_admin
-
--w /etc/sudoers -p wa -k sudoers_change
--w /etc/sudoers.d -p wa -k sudoers_change
--w /etc/shadow -p wa -k identity
--w /etc/passwd -p wa -k identity
--w /etc/group -p wa -k identity
--w /etc/ssh/sshd_config -p wa -k sshd_config
--w /etc/ssh/sshd_config.d -p wa -k sshd_config
--w /etc/systemd/system -p wa -k systemd_units
--w /lib/systemd/system -p wa -k systemd_units
--w /etc/parsec -p wa -k parsec_config
--w /etc/astra -p wa -k astra_config
 
 -w /opt/install/staging -p rwa -k install_staging
 -w /opt/install/approved -p rwa -k install_approved
@@ -37,9 +17,13 @@
 -w /var/ossec/etc -p wa -k wazuh_conf
 -w /var/ossec/bin -p wa -k wazuh_bin
 -w /var/ossec/logs/ossec.log -p wa -k wazuh_log
+-w /var/ossec/etc/shared -p wa -k wazuh_shared
+-w /var/ossec/queue -p wa -k wazuh_queue
+-a always,exit -F arch=b64 -S execve -F path=/var/ossec/bin/wazuh-control -F key=wazuh_control
 
 -w /var/log/sudo.log -p wa -k sudo_log
--a always,exit -F arch=b64 -S execve -F path=/usr/bin/sudo -F key=sudo_exec
 -w /var/lib/rbac-timers -p wa -k timeditor_state
+-w /home/svcsec/.ssh -p wa -k ssh_keys
 
-## Не включать -e 2 до завершения отладки
+## pkg_mgr / parsec / identity — в 10/11-hardening-*.rules
+## После отладки: 99-finalize.rules (-e 2)

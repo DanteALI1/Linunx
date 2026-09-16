@@ -1,0 +1,22 @@
+## /etc/audit/rules.d/11-hardening-astra.rules
+## УЗ: svcsecadmin | Astra SE 1.8 — apt/dpkg, PARSEC, сеть Debian-style
+
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/apt -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/apt-get -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/aptitude -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/dpkg -F key=pkg_mgr
+
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/pdpl-user -F key=parsec_admin
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/usercaps -F key=parsec_admin
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/pdp-ls -F key=parsec_admin
+-w /etc/parsec -p wa -k MAC_policy
+-w /etc/astra -p wa -k astra_config
+
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/nft -F key=firewall
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/iptables -F key=firewall
+-w /etc/nftables.conf -p wa -k firewall
+-w /etc/network -p wa -k network_mod
+-w /etc/netplan -p wa -k network_mod
+
+-w /lib/systemd/system -p wa -k systemd_units
+-w /etc/systemd/system -p wa -k systemd_units

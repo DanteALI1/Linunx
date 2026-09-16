@@ -18,10 +18,15 @@ visudo -cf /etc/sudoers.d/00-rbac-common
 visudo -cf /etc/sudoers.d/10-rbac-poinstall-astra
 visudo -cf /etc/sudoers.d/20-rbac-editor-wazuh-astra
 
+install -o root -g root -m 0640 "$ROOT/common/audit/00-base.rules" /etc/audit/rules.d/00-base.rules
+install -o root -g root -m 0640 "$ROOT/common/audit/10-hardening-common.rules" /etc/audit/rules.d/10-hardening-common.rules
+install -o root -g root -m 0640 "$ROOT/common/audit/10-hardening-syscalls.rules" /etc/audit/rules.d/10-hardening-syscalls.rules
+install -o root -g root -m 0640 "$ROOT/astra18/audit/11-hardening-astra.rules" /etc/audit/rules.d/11-hardening-astra.rules
 install -o root -g root -m 0640 "$ROOT/astra18/audit/50-rbac-astra.rules" /etc/audit/rules.d/50-rbac-astra.rules
 if [[ -d /etc/audisp/plugins.d ]]; then
   install -o root -g root -m 0644 "$ROOT/astra18/audit/audisp-parsec.conf" /etc/audisp/plugins.d/audisp-parsec.conf
 fi
+# 99-finalize (-e 2) — только после отладки вручную
 augenrules --load 2>/dev/null || systemctl restart auditd || service auditd restart
 
 install -d /etc/ssh/sshd_config.d

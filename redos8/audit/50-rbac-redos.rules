@@ -1,37 +1,17 @@
 ## /etc/audit/rules.d/50-rbac-redos.rules
+## УЗ установки/изменения: ТОЛЬКО root или svcsecadmin (консоль)
 ## РЕД ОС 8 — auditd rules для RBAC + Wazuh
+## Каталог описаний: docs/manual/06-auditd-rules-catalog.md
 ## Применить: augenrules --load  ИЛИ  service auditd restart
 
-## Удалить прежние правила при загрузке из rules.d (управляется augenrules)
-## Не ставьте -D в этом файле, если политика требует накопления.
-
-## Идентификация ключей: rbac_*, wazuh_*, mac_*
+## Идентификация ключей: см. каталог (pkg_mgr, wazuh_*, svcsec_super, ...)
 
 ## --- execve мониторинг критичных бинарей ---
--a always,exit -F arch=b64 -S execve -F path=/usr/bin/dnf -F key=pkg_mgr
--a always,exit -F arch=b64 -S execve -F path=/usr/bin/yum -F key=pkg_mgr
--a always,exit -F arch=b64 -S execve -F path=/usr/bin/rpm -F key=pkg_mgr
 -a always,exit -F arch=b64 -S execve -F path=/usr/bin/systemctl -F key=systemctl
--a always,exit -F arch=b64 -S execve -F path=/usr/sbin/semanage -F key=selinux_admin
--a always,exit -F arch=b64 -S execve -F path=/usr/sbin/setsebool -F key=selinux_admin
--a always,exit -F arch=b64 -S execve -F path=/usr/sbin/visudo -F key=sudoers_change
 -a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/svcsec-super -F key=svcsec_super
 -a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/approve-artifact -F key=artifact_approve
 -a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/timeditor-grant -F key=timeditor_grant
 -a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/timeditor-expire -F key=timeditor_expire
-
-## --- запись в критичные пути ---
--w /etc/sudoers -p wa -k sudoers_change
--w /etc/sudoers.d -p wa -k sudoers_change
--w /etc/shadow -p wa -k identity
--w /etc/passwd -p wa -k identity
--w /etc/group -p wa -k identity
--w /etc/ssh/sshd_config -p wa -k sshd_config
--w /etc/ssh/sshd_config.d -p wa -k sshd_config
--w /etc/systemd/system -p wa -k systemd_units
--w /usr/lib/systemd/system -p wa -k systemd_units
--w /etc/selinux -p wa -k selinux_config
--w /boot -p wa -k boot_integrity
 
 ## --- зоны поставки и приложений ---
 -w /opt/install/staging -p rwa -k install_staging
@@ -43,14 +23,14 @@
 -w /var/ossec/etc -p wa -k wazuh_conf
 -w /var/ossec/bin -p wa -k wazuh_bin
 -w /var/ossec/logs/ossec.log -p wa -k wazuh_log
+-w /var/ossec/etc/shared -p wa -k wazuh_shared
+-w /var/ossec/queue -p wa -k wazuh_queue
 -a always,exit -F arch=b64 -S execve -F path=/var/ossec/bin/wazuh-control -F key=wazuh_control
 
-## --- sudo ---
+## --- sudo / timeditor ---
 -w /var/log/sudo.log -p wa -k sudo_log
--a always,exit -F arch=b64 -S execve -F path=/usr/bin/sudo -F key=sudo_exec
-
-## --- timeditor state ---
 -w /var/lib/rbac-timers -p wa -k timeditor_state
+-w /home/svcsec/.ssh -p wa -k ssh_keys
 
-## --- неизменяемость правил (последней строкой после отладки) ---
-## -e 2
+## pkg_mgr / selinux / identity / sshd / systemd — в 10/11-hardening-*.rules
+## После отладки: установить 99-finalize.rules (-e 2)

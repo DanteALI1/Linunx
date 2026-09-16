@@ -1,0 +1,7 @@
+## /etc/audit/rules.d/00-base.rules
+## УЗ установки: root или svcsecadmin (консоль)
+## Базовые параметры буфера audit
+
+-b 8192
+-f 1
+-r 0

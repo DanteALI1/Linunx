@@ -1,0 +1,5 @@
+## /etc/audit/rules.d/99-finalize.rules
+## УЗ: svcsecadmin | Включать ТОЛЬКО после отладки всех правил
+## Делает конфигурацию audit неизменяемой до reboot (-e 2)
+
+-e 2
