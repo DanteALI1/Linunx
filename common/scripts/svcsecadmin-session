@@ -1,0 +1,35 @@
+#!/bin/bash
+# svcsecadmin-session — контролируемая сессия svcsecadmin
+# Запрещает произвольный nested sudo escalation UX; аудит входа/выхода.
+# Реальные привилегии определяются membership в wheel/sudo и sudoers svcsecadmin.
+
+set -euo pipefail
+
+MODE="${1:---interactive}"
+shift || true
+
+STATE_DIR="/var/lib/rbac-timers"
+mkdir -p "$STATE_DIR"
+
+case "$MODE" in
+  --interactive)
+    logger -t svcsecadmin-session "interactive session open uid=$(id -u) tty=${SSH_TTY:-local}"
+    # Login shell без profile tricks: явный путь
+    if [[ -x /bin/bash ]]; then
+      exec /bin/bash --login
+    fi
+    exec /bin/sh -l
+    ;;
+  --exec)
+    if [[ $# -eq 0 ]]; then
+      echo "usage: svcsecadmin-session --exec <command> [args...]" >&2
+      exit 2
+    fi
+    logger -t svcsecadmin-session "exec: $*"
+    exec "$@"
+    ;;
+  *)
+    echo "unknown mode: $MODE" >&2
+    exit 2
+    ;;
+esac

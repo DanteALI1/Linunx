@@ -1,0 +1,69 @@
+#!/bin/bash
+# approve-artifact — проверка целостности staging → approved
+# Запускать ТОЛЬКО от svcsecadmin (или через super --exec).
+#
+# Usage:
+#   approve-artifact /opt/install/staging/wazuh-agent-4.x.x.rpm
+#   approve-artifact /opt/install/staging/app.tar.gz [--sha256 FILE]
+
+set -euo pipefail
+
+STAGING_ROOT="/opt/install/staging"
+APPROVED_ROOT="/opt/install/approved"
+AUDIT_KEY="artifact_approve"
+
+die() { echo "ERROR: $*" >&2; exit 1; }
+
+[[ "$(id -un)" == "svcsecadmin" || "$(id -u)" -eq 0 ]] || die "must run as svcsecadmin/root"
+
+SRC="${1:-}"
+[[ -n "$SRC" ]] || die "usage: $0 <staging-file> [--sha256 file.sha256]"
+[[ -f "$SRC" ]] || die "not a file: $SRC"
+
+# Нормализация: файл обязан лежать внутри staging
+SRC_REAL="$(realpath -e "$SRC")"
+STAGING_REAL="$(realpath -e "$STAGING_ROOT")"
+case "$SRC_REAL" in
+  "$STAGING_REAL"/*) ;;
+  *) die "file must be under $STAGING_ROOT" ;;
+esac
+
+BASENAME="$(basename "$SRC_REAL")"
+SHA_ARG=""
+if [[ "${2:-}" == "--sha256" ]]; then
+  SHA_ARG="${3:-}"
+  [[ -f "$SHA_ARG" ]] || die "sha256 file missing: $SHA_ARG"
+elif [[ -f "${SRC_REAL}.sha256" ]]; then
+  SHA_ARG="${SRC_REAL}.sha256"
+elif [[ -f "${STAGING_REAL}/${BASENAME}.sha256" ]]; then
+  SHA_ARG="${STAGING_REAL}/${BASENAME}.sha256"
+fi
+
+[[ -n "$SHA_ARG" ]] || die "SHA256 sidecar required (*.sha256 or --sha256)"
+
+echo "[*] Verifying SHA256..."
+# sha256sum -c ожидает строки вида: <hash>  <filename>
+# Поддерживаем sidecar с именем файла или только хешем
+if grep -qE '[[:space:]]' "$SHA_ARG"; then
+  (cd "$(dirname "$SRC_REAL")" && sha256sum -c "$(basename "$SHA_ARG")")
+else
+  EXPECTED="$(tr -d ' \t\n\r' < "$SHA_ARG")"
+  ACTUAL="$(sha256sum "$SRC_REAL" | awk '{print $1}')"
+  [[ "$EXPECTED" == "$ACTUAL" ]] || die "hash mismatch: expected=$EXPECTED actual=$ACTUAL"
+  echo "$BASENAME: OK"
+fi
+
+mkdir -p "$APPROVED_ROOT"
+DEST="${APPROVED_ROOT}/${BASENAME}"
+install -o root -g root -m 0640 "$SRC_REAL" "$DEST"
+# sha sidecar тоже
+if [[ -f "$SHA_ARG" ]]; then
+  install -o root -g root -m 0640 "$SHA_ARG" "${DEST}.sha256"
+fi
+
+# Удаление из staging после approve (снижает риск повторной подмены)
+rm -f -- "$SRC_REAL"
+[[ -f "$SHA_ARG" && "$SHA_ARG" == "$STAGING_REAL"* ]] && rm -f -- "$SHA_ARG" || true
+
+logger -t approve-artifact "approved=$DEST key=$AUDIT_KEY"
+echo "[+] Approved: $DEST"

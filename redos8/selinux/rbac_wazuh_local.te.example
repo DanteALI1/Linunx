@@ -1,0 +1,21 @@
+# Пример локального SELinux-модуля (заготовка)
+# НЕ применять без анализа AVC на конкретной сборке РЕД ОС 8.
+#
+# Генерация:
+#   ausearch -m avc -ts recent --raw | audit2allow -M rbac_wazuh_local
+#   semodule -i rbac_wazuh_local.pp
+#
+# Ниже — иллюстративный .te (может НЕ совпадать с политикой RedOS):
+
+module rbac_wazuh_local 1.0;
+
+require {
+    type unconfined_service_t;
+    type var_t;
+    type bin_t;
+    class file { read write open getattr };
+    class dir { search read };
+}
+
+# Пример: разрешить службе читать conf (замените типы на фактические из ausearch)
+# allow wazuh_t wazuh_conf_t:file { read open getattr };

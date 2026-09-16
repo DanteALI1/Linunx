@@ -1,0 +1,17 @@
+# /etc/sudoers.d/10-rbac-poinstall-redos
+# РЕД ОС 8 — whitelist poinstall (self-contained + wazuh-helpers)
+# visudo -cf /etc/sudoers.d/10-rbac-poinstall-redos
+
+Cmnd_Alias POINSTALL_APPROVED = /opt/install/approved/*.sh, /opt/install/approved/*/install.sh, /opt/install/approved/install-wazuh-helpers.sh
+Cmnd_Alias POINSTALL_APPS = /opt/apps/*/bin/*, /opt/apps/*/sbin/*, /opt/apps/wazuh-helpers/bin/*
+Cmnd_Alias POINSTALL_SYNC = /usr/bin/rsync, /usr/bin/install, /usr/bin/tar, /usr/bin/cp, /usr/bin/mkdir
+
+%poinstall ALL=(root) POINSTALL_APPROVED, POINSTALL_APPS
+# SYNC без shell: NOEXEC tag
+%poinstall ALL=(root) NOEXEC: POINSTALL_SYNC
+
+# Пакетный менеджер и systemd — не выдаются (отсутствие в whitelist = deny).
+# Явные deny для ясности оператору:
+%poinstall ALL=(root) !/usr/bin/dnf, !/usr/bin/yum, !/usr/bin/rpm, !/bin/rpm
+%poinstall ALL=(root) !/usr/bin/systemctl, !/bin/systemctl, !/usr/sbin/service
+%poinstall ALL=(root) !/usr/bin/firewall-cmd, !/usr/sbin/semanage, !/usr/sbin/setsebool

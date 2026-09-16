@@ -1,0 +1,19 @@
+# /etc/sudoers.d/20-rbac-editor-wazuh-astra
+# Astra Linux SE 1.8 — editor/timeditor Wazuh whitelist
+# visudo -cf /etc/sudoers.d/20-rbac-editor-wazuh-astra
+
+Cmnd_Alias WAZUH_SUDOEDIT = sudoedit /var/ossec/etc/ossec.conf, \
+    sudoedit /var/ossec/etc/local_internal_options.conf
+
+Cmnd_Alias APP_SUDOEDIT = sudoedit /etc/opt/apps/*/*, sudoedit /etc/opt/apps/*/*/*
+
+Cmnd_Alias WAZUH_AGENT_CTL = /bin/systemctl restart wazuh-agent, \
+    /bin/systemctl status wazuh-agent, \
+    /usr/bin/systemctl restart wazuh-agent, \
+    /usr/bin/systemctl status wazuh-agent
+
+%editor ALL=(root) WAZUH_SUDOEDIT, APP_SUDOEDIT
+%editor ALL=(root) WAZUH_AGENT_CTL
+
+%timeditor ALL=(root) NOPASSWD: WAZUH_SUDOEDIT, APP_SUDOEDIT
+%timeditor ALL=(root) NOPASSWD: WAZUH_AGENT_CTL

@@ -1,0 +1,13 @@
+[Unit]
+Description=Expire temporary timeditor group memberships
+Documentation=file:///usr/local/share/doc/rbac/timeditor.md
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/timeditor-expire
+Nice=10
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/rbac-timers /var/log/rbac /etc/group /etc/gshadow /etc/passwd
+PrivateTmp=yes
+NoNewPrivileges=yes

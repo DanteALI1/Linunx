@@ -1,0 +1,56 @@
+## /etc/audit/rules.d/50-rbac-redos.rules
+## РЕД ОС 8 — auditd rules для RBAC + Wazuh
+## Применить: augenrules --load  ИЛИ  service auditd restart
+
+## Удалить прежние правила при загрузке из rules.d (управляется augenrules)
+## Не ставьте -D в этом файле, если политика требует накопления.
+
+## Идентификация ключей: rbac_*, wazuh_*, mac_*
+
+## --- execve мониторинг критичных бинарей ---
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/dnf -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/yum -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/rpm -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/systemctl -F key=systemctl
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/semanage -F key=selinux_admin
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/setsebool -F key=selinux_admin
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/visudo -F key=sudoers_change
+-a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/svcsec-super -F key=svcsec_super
+-a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/approve-artifact -F key=artifact_approve
+-a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/timeditor-grant -F key=timeditor_grant
+-a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/timeditor-expire -F key=timeditor_expire
+
+## --- запись в критичные пути ---
+-w /etc/sudoers -p wa -k sudoers_change
+-w /etc/sudoers.d -p wa -k sudoers_change
+-w /etc/shadow -p wa -k identity
+-w /etc/passwd -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/ssh/sshd_config -p wa -k sshd_config
+-w /etc/ssh/sshd_config.d -p wa -k sshd_config
+-w /etc/systemd/system -p wa -k systemd_units
+-w /usr/lib/systemd/system -p wa -k systemd_units
+-w /etc/selinux -p wa -k selinux_config
+-w /boot -p wa -k boot_integrity
+
+## --- зоны поставки и приложений ---
+-w /opt/install/staging -p rwa -k install_staging
+-w /opt/install/approved -p rwa -k install_approved
+-w /opt/apps -p wa -k apps_write
+-w /var/opt/apps -p wa -k apps_data
+
+## --- Wazuh ---
+-w /var/ossec/etc -p wa -k wazuh_conf
+-w /var/ossec/bin -p wa -k wazuh_bin
+-w /var/ossec/logs/ossec.log -p wa -k wazuh_log
+-a always,exit -F arch=b64 -S execve -F path=/var/ossec/bin/wazuh-control -F key=wazuh_control
+
+## --- sudo ---
+-w /var/log/sudo.log -p wa -k sudo_log
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/sudo -F key=sudo_exec
+
+## --- timeditor state ---
+-w /var/lib/rbac-timers -p wa -k timeditor_state
+
+## --- неизменяемость правил (последней строкой после отладки) ---
+## -e 2

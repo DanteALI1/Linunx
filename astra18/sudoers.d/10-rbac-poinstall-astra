@@ -1,0 +1,14 @@
+# /etc/sudoers.d/10-rbac-poinstall-astra
+# Astra Linux SE 1.8 — whitelist poinstall
+# visudo -cf /etc/sudoers.d/10-rbac-poinstall-astra
+
+Cmnd_Alias POINSTALL_APPROVED = /opt/install/approved/*.sh, /opt/install/approved/*/install.sh, /opt/install/approved/install-wazuh-helpers.sh
+Cmnd_Alias POINSTALL_APPS = /opt/apps/*/bin/*, /opt/apps/*/sbin/*, /opt/apps/wazuh-helpers/bin/*
+Cmnd_Alias POINSTALL_SYNC = /usr/bin/rsync, /usr/bin/install, /usr/bin/tar, /usr/bin/cp, /usr/bin/mkdir
+
+%poinstall ALL=(root) POINSTALL_APPROVED, POINSTALL_APPS
+%poinstall ALL=(root) NOEXEC: POINSTALL_SYNC
+
+%poinstall ALL=(root) !/usr/bin/apt, !/usr/bin/apt-get, !/usr/bin/aptitude, !/usr/bin/dpkg
+%poinstall ALL=(root) !/usr/bin/systemctl, !/bin/systemctl, !/usr/sbin/service
+%poinstall ALL=(root) !/usr/sbin/pdpl-user, !/usr/sbin/usercaps

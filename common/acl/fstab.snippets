@@ -1,0 +1,9 @@
+# Пример фрагментов fstab (НЕ копировать слепо — адаптировать UUID/устройства)
+#
+# /var/opt/apps — данные приложений, NOEXEC
+# UUID=xxxx  /var/opt/apps  xfs  defaults,nodev,nosuid,noexec  0 2
+#
+# /opt/install/staging — при отдельном разделе: NOEXEC (SFTP только файлы)
+# UUID=yyyy  /opt/install/staging  xfs  defaults,nodev,nosuid,noexec  0 2
+#
+# НЕ ставьте noexec на /, /usr, /bin, /sbin, /lib*, /var/ossec

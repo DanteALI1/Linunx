@@ -1,0 +1,37 @@
+# /etc/sudoers.d/00-rbac-common
+# Общий каркас RBAC. Проверка: visudo -cf /etc/sudoers.d/00-rbac-common
+#
+# Контроль = sudoers + MAC + audit (не shell aliases).
+# Редактирование привилегированных файлов — ТОЛЬКО sudoedit.
+
+Defaults    env_reset
+Defaults    mail_badpass
+Defaults    secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Defaults    use_pty
+Defaults    logfile="/var/log/sudo.log"
+Defaults    log_input,log_output
+Defaults    iolog_dir="/var/log/sudo-io/%{user}"
+Defaults    !env_editor
+Defaults    editor="/usr/bin/vim"
+
+# Cmnd aliases
+Cmnd_Alias RBAC_SUPER = /usr/local/sbin/svcsec-super
+Cmnd_Alias RBAC_APPROVE = /usr/local/sbin/approve-artifact, /usr/local/sbin/approve-artifact *
+Cmnd_Alias RBAC_TIMEDITOR_ADMIN = /usr/local/sbin/timeditor-grant, /usr/local/sbin/timeditor-grant *, /usr/local/sbin/timeditor-expire
+
+# --- svcsec: только переход к svcsecadmin через super ---
+svcsec ALL=(svcsecadmin) NOPASSWD: RBAC_SUPER
+
+# --- svcsecadmin: полный локальный админ (SSH запрещён отдельно) ---
+svcsecadmin ALL=(ALL) ALL
+svcsecadmin ALL=(root) NOPASSWD: RBAC_APPROVE, RBAC_TIMEDITOR_ADMIN
+
+# Запрет классических shell-escape редакторов через sudo для прикладных ролей
+# (явный deny; положительные права — в ОС-специфичных файлах)
+Cmnd_Alias DENY_EDITORS = /usr/bin/vim, /bin/vim, /usr/bin/vi, /bin/vi, /usr/bin/nano, /bin/nano, /usr/bin/emacs, /bin/emacs
+Cmnd_Alias DENY_SHELLS = /bin/bash, /bin/sh, /bin/dash, /usr/bin/bash, /usr/bin/sh, /bin/zsh, /usr/bin/zsh, /usr/bin/fish
+Cmnd_Alias DENY_USERMGMT = /usr/sbin/useradd, /usr/sbin/usermod, /usr/sbin/userdel, /usr/sbin/groupadd, /usr/sbin/groupmod, /usr/sbin/groupdel, /usr/sbin/visudo, /usr/bin/passwd
+
+%poinstall ALL=(root) !DENY_SHELLS, !DENY_EDITORS, !DENY_USERMGMT
+%editor ALL=(root) !DENY_SHELLS, !DENY_EDITORS, !DENY_USERMGMT
+%timeditor ALL=(root) !DENY_SHELLS, !DENY_EDITORS, !DENY_USERMGMT

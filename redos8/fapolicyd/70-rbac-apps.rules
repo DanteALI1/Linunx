@@ -1,0 +1,13 @@
+# /etc/fapolicyd/rules.d/70-rbac-apps.rules  (опционально, РЕД ОС 8)
+# Порядок правил критичен. После правок: fapolicyd-cli --update && systemctl restart fapolicyd
+
+# Разрешить exec из approved и /opt/apps для группы poinstall (по trust/path)
+allow perm=any all : dir=/opt/install/approved/
+allow perm=any all : dir=/opt/apps/
+allow perm=execute all : dir=/var/ossec/bin/
+
+# Запретить exec из data-зоны
+deny perm=execute all : dir=/var/opt/apps/
+deny perm=execute all : dir=/opt/install/staging/
+
+# Остальное — по политике ОС (не копируйте deny all без полного набора allow)
