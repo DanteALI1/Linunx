@@ -265,11 +265,15 @@ ssh -tt svcsec@<server>        # не bash
 Каталог всех правил: [`06-auditd-rules-catalog.md`](06-auditd-rules-catalog.md).
 
 ```bash
-install -o root -g root -m 0640 common/audit/00-base.rules /etc/audit/rules.d/00-base.rules
-install -o root -g root -m 0640 common/audit/10-hardening-common.rules /etc/audit/rules.d/10-hardening-common.rules
-install -o root -g root -m 0640 common/audit/10-hardening-syscalls.rules /etc/audit/rules.d/10-hardening-syscalls.rules
-install -o root -g root -m 0640 astra18/audit/11-hardening-astra.rules /etc/audit/rules.d/11-hardening-astra.rules
-install -o root -g root -m 0640 astra18/audit/50-rbac-astra.rules /etc/audit/rules.d/50-rbac-astra.rules
+# Вариант A — один готовый файл с комментариями у каждого правила:
+cp astra18/audit/READY-all-rules.rules /etc/audit/rules.d/50-rbac-all.rules
+
+# Вариант B — набор файлов:
+# install -o root -g root -m 0640 common/audit/00-base.rules /etc/audit/rules.d/00-base.rules
+# install -o root -g root -m 0640 common/audit/10-hardening-common.rules /etc/audit/rules.d/10-hardening-common.rules
+# install -o root -g root -m 0640 common/audit/10-hardening-syscalls.rules /etc/audit/rules.d/10-hardening-syscalls.rules
+# install -o root -g root -m 0640 astra18/audit/11-hardening-astra.rules /etc/audit/rules.d/11-hardening-astra.rules
+# install -o root -g root -m 0640 astra18/audit/50-rbac-astra.rules /etc/audit/rules.d/50-rbac-astra.rules
 
 # Плагин PARSEC:
 install -d /etc/audisp/plugins.d

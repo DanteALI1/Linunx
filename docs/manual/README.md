@@ -11,9 +11,12 @@
 | [03-astra18-manual.md](03-astra18-manual.md) | Astra Linux SE 1.8 — полная ручная настройка |
 | [04-wazuh-manual.md](04-wazuh-manual.md) | Ручной прогон Wazuh Agent: upload→install→sudoedit→тесты |
 | [05-who-runs-what.md](05-who-runs-what.md) | **Матрица: этап → учётная запись** |
-| [06-auditd-rules-catalog.md](06-auditd-rules-catalog.md) | **Все правила auditd + ключи + зачем (CIS/STIG/RBAC/практики)** |
+| [06-auditd-rules-catalog.md](06-auditd-rules-catalog.md) | Справочник ключей auditd (подробно) |
+| [07-audit-ready-files.md](07-audit-ready-files.md) | **Готовый файл правил** с краткими комментариями у каждого |
 
-Объём: каждая команда сопровождается блоками **УЗ**, **зачем**, **как работает**, **проверка**.
+Готовые файлы сразу:
+- [`redos8/audit/READY-all-rules.rules`](../../redos8/audit/READY-all-rules.rules)
+- [`astra18/audit/READY-all-rules.rules`](../../astra18/audit/READY-all-rules.rules)
 
 Рекомендуемый порядок:
 

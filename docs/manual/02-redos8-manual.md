@@ -419,7 +419,16 @@ ssh svcsec@<server>
 **УЗ: `root` / `svcsecadmin` (консоль)**  
 Полный список правил и назначений: [`06-auditd-rules-catalog.md`](06-auditd-rules-catalog.md).
 
-### 7.1. Установить правила (базовые + hardening + RBAC)
+### 7.1. Установить правила (рекомендуется один готовый файл)
+
+**Вариант A — один файл со всеми правилами и комментариями:**
+
+```bash
+cp redos8/audit/READY-all-rules.rules /etc/audit/rules.d/50-rbac-all.rules
+# см. docs/manual/07-audit-ready-files.md
+```
+
+**Вариант B — набор из нескольких файлов:**
 
 ```bash
 install -o root -g root -m 0640 common/audit/00-base.rules /etc/audit/rules.d/00-base.rules
