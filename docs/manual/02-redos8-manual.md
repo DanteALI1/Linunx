@@ -1,16 +1,21 @@
 # РЕД ОС 8 — поэтапная ручная настройка
 
-Выполняйте от **root** на консоли (или от существующего админа до появления
-`svcsecadmin`). После каждого этапа есть блок **Проверка**.
+> **Под какой УЗ работать:** сводная матрица —  
+> [`05-who-runs-what.md`](05-who-runs-what.md).  
+> На каждом этапе ниже указано поле **УЗ:**.
+>
+> **Справочник всех правил auditd:**  
+> [`06-auditd-rules-catalog.md`](06-auditd-rules-catalog.md).
 
-Эталонные файлы лежат в репозитории (`redos8/`, `common/`) — копируйте их
-содержимое вручную или сверяйте построчно.
+Выполняйте от указанной УЗ. После каждого этапа — блок **Проверка**.
 
-Предварительно прочитайте [01-how-it-works.md](01-how-it-works.md).
+Эталонные файлы: `redos8/`, `common/`. Теория: [01-how-it-works.md](01-how-it-works.md).
 
 ---
 
 ## Этап 0. Инвентаризация и пакеты
+
+**УЗ: `root` (локальная консоль / IPMI)** — bootstrap до появления svcsecadmin.
 
 ### 0.1. Убедиться, что это РЕД ОС 8
 
@@ -56,6 +61,8 @@ systemctl is-enabled sshd auditd
 
 ## Этап 1. SELinux → enforcing
 
+**УЗ: `root` / после создания УЗ — `svcsecadmin` (консоль)**
+
 ### 1.1. Текущий режим
 
 ```bash
@@ -90,6 +97,8 @@ getenforce   # Enforcing
 ---
 
 ## Этап 2. Группы и пользователи
+
+**УЗ: `root` (консоль)** — создание ролевых УЗ; дальше админ-работы ведёт `svcsecadmin`.
 
 ### 2.1. Группы ролей
 
@@ -164,6 +173,8 @@ id svcsec; id svcsecadmin; id poinstaller; id editor1
 ---
 
 ## Этап 3. Каталоги, права, ACL, mount
+
+**УЗ: `root` или `svcsecadmin` (консоль)**
 
 ### 3.1. Создать дерево
 
@@ -240,6 +251,8 @@ su -s /bin/bash poinstaller -c 'touch /opt/install/approved/should_fail'   # д�
 
 ## Этап 4. Бинарники управления (super, approve, timeditor)
 
+**УЗ: `root` или `svcsecadmin` (консоль)**
+
 Скопируйте из репозитория и установите:
 
 ```bash
@@ -289,6 +302,8 @@ ls -l /usr/local/sbin/svcsec-super /usr/local/sbin/approve-artifact
 ---
 
 ## Этап 5. sudoers
+
+**УЗ: `root` или `svcsecadmin` (консоль; держите root-сессию открытой!)**
 
 ### 5.1. Подключить файлы
 
@@ -349,6 +364,8 @@ su - poinstaller -c 'sudo -n dnf --version'   # отказано
 
 ## Этап 6. SSH / SFTP
 
+**УЗ: `root` / `svcsecadmin` (консоль)** · проверка SFTP — с рабочей станции ключом **svcsec**
+
 ### 6.1. Drop-in конфиг
 
 ```bash
@@ -399,18 +416,30 @@ ssh svcsec@<server>
 
 ## Этап 7. auditd
 
-### 7.1. Установить правила
+**УЗ: `root` / `svcsecadmin` (консоль)**  
+Полный список правил и назначений: [`06-auditd-rules-catalog.md`](06-auditd-rules-catalog.md).
+
+### 7.1. Установить правила (базовые + hardening + RBAC)
 
 ```bash
-install -o root -g root -m 0640 redos8/audit/50-rbac-redos.rules \
-  /etc/audit/rules.d/50-rbac-redos.rules
+install -o root -g root -m 0640 common/audit/00-base.rules /etc/audit/rules.d/00-base.rules
+install -o root -g root -m 0640 common/audit/10-hardening-common.rules /etc/audit/rules.d/10-hardening-common.rules
+install -o root -g root -m 0640 common/audit/10-hardening-syscalls.rules /etc/audit/rules.d/10-hardening-syscalls.rules
+install -o root -g root -m 0640 redos8/audit/11-hardening-redos.rules /etc/audit/rules.d/11-hardening-redos.rules
+install -o root -g root -m 0640 redos8/audit/50-rbac-redos.rules /etc/audit/rules.d/50-rbac-redos.rules
+# После полной отладки (не сразу!):
+# install -m 0640 common/audit/99-finalize.rules.example /etc/audit/rules.d/99-finalize.rules
+```
 
+### 7.2. Загрузить правила
+
+```bash
 augenrules --load
 # или:
 # systemctl restart auditd
 ```
 
-### 7.2. Включить службу и логи sudo
+### 7.3. Включить службу и логи sudo
 
 ```bash
 systemctl enable --now auditd
@@ -418,23 +447,22 @@ touch /var/log/sudo.log
 chmod 0600 /var/log/sudo.log
 ```
 
-### 7.3. Быстрый самотест правил
+### 7.4. Быстрый самотест правил
 
 ```bash
-# сгенерировать событие:
 ls /opt/install/staging >/dev/null
 ausearch -k install_staging -ts recent | tail
-
-auditctl -l | head
+auditctl -l | wc -l
 ```
 
 **Как работает:** `augenrules` собирает файлы из `rules.d` в `/etc/audit/audit.rules`
-и загружает в ядро. Ключи `-k` нужны, чтобы потом не искать «иголку» в сыром логе.
+и загружает в ядро. Ключи `-k` нужны для поиска в `ausearch`.
 
 ---
 
 ## Этап 8. systemd timer для timeditor
 
+**УЗ: `svcsecadmin` (консоль)** · grant потом тоже только svcsecadmin; expire — systemd от root
 ```bash
 install -o root -g root -m 0644 common/systemd/timeditor-expire.service \
   /etc/systemd/system/timeditor-expire.service
@@ -462,6 +490,8 @@ id editor1   # timeditor снят
 
 ## Этап 9. SELinux контексты каталогов
 
+**УЗ: `svcsecadmin` (консоль)**
+
 ```bash
 restorecon -Rv /opt/install /opt/apps /var/opt/apps /usr/local/sbin
 # после установки Wazuh — обязательно:
@@ -479,6 +509,8 @@ ausearch -m avc -ts recent | tail || echo "no recent AVC"
 
 ## Этап 10. (Опционально) fapolicyd
 
+**УЗ: `svcsecadmin`**
+
 ```bash
 # установить правила из redos8/fapolicyd/70-rbac-apps.rules
 # fapolicyd-cli --update
@@ -491,7 +523,8 @@ ausearch -m avc -ts recent | tail || echo "no recent AVC"
 
 ## Этап 11. Приёмка базовой настройки (без Wazuh)
 
-Чеклист:
+**УЗ: `svcsecadmin`** запускает проверки; эффекты ролей — через `su - <роль>`.  
+См. также [`05-who-runs-what.md`](05-who-runs-what.md) раздел C.
 
 - [ ] `getenforce` = Enforcing  
 - [ ] `visudo -cf` OK на всех drop-in  
@@ -507,6 +540,8 @@ ausearch -m avc -ts recent | tail || echo "no recent AVC"
 ---
 
 ## Этап 12. Rollback (если нужно откатить только RBAC)
+
+**УЗ: `svcsecadmin` или `root` (консоль)**
 
 См. `rollback/rollback-redos8.md`. Кратко: удалить drop-in sudoers/sshd/audit,
 `visudo -cf`, reload sshd, не удалять svcsecadmin пока нет другого админ-доступа.

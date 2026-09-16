@@ -1,16 +1,18 @@
 # Astra Linux SE 1.8 — поэтапная ручная настройка
 
-Выполняйте от **root** на консоли. Имена утилит PARSEC сверяйте с «Руководством
-администратора» вашей сборки SE 1.8 — в тексте даны операционные шаблоны и смысл.
+> **Под какой УЗ работать:** [`05-who-runs-what.md`](05-who-runs-what.md).  
+> **Справочник auditd:** [`06-auditd-rules-catalog.md`](06-auditd-rules-catalog.md).
 
-Предварительно: [01-how-it-works.md](01-how-it-works.md).  
-Эталонные файлы: `astra18/`, `common/`.
+Выполняйте от **указанной УЗ**. Имена утилит PARSEC сверяйте с руководством
+вашей сборки SE 1.8.
+
+Предварительно: [01-how-it-works.md](01-how-it-works.md). Эталоны: `astra18/`, `common/`.
 
 ---
 
 ## Этап 0. Инвентаризация и пакеты
 
-### 0.1. Версия ОС
+**УЗ: `root` (консоль)** — bootstrap.
 
 ```bash
 cat /etc/astra_version 2>/dev/null || cat /etc/os-release
@@ -48,6 +50,8 @@ systemctl is-active ssh auditd || systemctl is-active sshd auditd
 
 ## Этап 1. Подтвердить MAC / MIC (PARSEC)
 
+**УЗ: `root` / `svcsecadmin` (консоль)**
+
 ```bash
 # Типовые проверки (зависят от сборки):
 astra-modeswitch status 2>/dev/null || true
@@ -67,6 +71,8 @@ astra-modeswitch status 2>/dev/null || true
 ---
 
 ## Этап 2. Группы и пользователи
+
+**УЗ: `root` (консоль)** — создание ролей; далее админ-работы — `svcsecadmin`.
 
 Команды те же по смыслу, что на РЕД ОС (useradd/groupadd — стандартные):
 
@@ -126,6 +132,8 @@ id svcsec; id svcsecadmin; id poinstaller; id editor1
 
 ## Этап 3. Каталоги, ACL, noexec
 
+**УЗ: `root` / `svcsecadmin` (консоль)**
+
 Идентично РЕД ОС по путям и правам:
 
 ```bash
@@ -172,6 +180,8 @@ su -s /bin/bash poinstaller -c 'touch /opt/install/approved/x'  # FAIL ожид�
 
 ## Этап 4. Бинарники управления
 
+**УЗ: `svcsecadmin` (консоль)**
+
 ```bash
 install -o root -g root -m 0750 common/scripts/svcsec-super        /usr/local/sbin/svcsec-super
 install -o root -g root -m 0750 common/scripts/svcsecadmin-session /usr/local/sbin/svcsecadmin-session
@@ -191,6 +201,8 @@ install -o root -g root -m 0750 astra18/scripts/install-wazuh-agent-astra.sh \
 ---
 
 ## Этап 5. sudoers
+
+**УЗ: `svcsecadmin` / `root` (консоль; держите root-сессию!)**
 
 ```bash
 install -o root -g root -m 0440 common/sudoers.d/00-rbac-common \
@@ -222,7 +234,8 @@ su - editor1 -c 'sudo -n bash -c id'             # DENY
 
 ## Этап 6. SSH / SFTP
 
-Тот же drop-in, что для РЕД ОС:
+**УЗ настройки: `svcsecadmin`** · проверка: ключ **svcsec** с рабочей станции
+
 
 ```bash
 install -d /etc/ssh/sshd_config.d
@@ -248,9 +261,15 @@ ssh -tt svcsec@<server>        # не bash
 
 ## Этап 7. auditd + audisp-parsec
 
+**УЗ: `svcsecadmin` (консоль)**  
+Каталог всех правил: [`06-auditd-rules-catalog.md`](06-auditd-rules-catalog.md).
+
 ```bash
-install -o root -g root -m 0640 astra18/audit/50-rbac-astra.rules \
-  /etc/audit/rules.d/50-rbac-astra.rules
+install -o root -g root -m 0640 common/audit/00-base.rules /etc/audit/rules.d/00-base.rules
+install -o root -g root -m 0640 common/audit/10-hardening-common.rules /etc/audit/rules.d/10-hardening-common.rules
+install -o root -g root -m 0640 common/audit/10-hardening-syscalls.rules /etc/audit/rules.d/10-hardening-syscalls.rules
+install -o root -g root -m 0640 astra18/audit/11-hardening-astra.rules /etc/audit/rules.d/11-hardening-astra.rules
+install -o root -g root -m 0640 astra18/audit/50-rbac-astra.rules /etc/audit/rules.d/50-rbac-astra.rules
 
 # Плагин PARSEC:
 install -d /etc/audisp/plugins.d
@@ -281,6 +300,8 @@ ausearch -k parsec_admin -ts recent | tail
 
 ## Этап 8. Timer timeditor
 
+**УЗ: `svcsecadmin`** (enable timer); `timeditor-grant` — тоже только svcsecadmin
+
 ```bash
 install -o root -g root -m 0644 common/systemd/timeditor-expire.service \
   /etc/systemd/system/timeditor-expire.service
@@ -300,6 +321,8 @@ systemctl list-timers | grep timeditor
 
 ## Этап 9. Согласование меток с политикой
 
+**УЗ: `svcsecadmin`**
+
 Пройдите чеклист `astra18/parsec/CHECKLIST.md` целиком:
 
 1. Уровни УЗ ролей назначены.  
@@ -314,6 +337,8 @@ systemctl list-timers | grep timeditor
 ---
 
 ## Этап 10. Приёмка базы (без Wazuh)
+
+**УЗ: `svcsecadmin`** (+ `su` на ролевые УЗ для negative-тестов)
 
 - [ ] MAC/MIC активны по профилю СЗИ  
 - [ ] sudoers parsed OK; negative-тесты poinstall/editor пройдены  

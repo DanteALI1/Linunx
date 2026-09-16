@@ -1,5 +1,8 @@
 # Ручной прогон: Wazuh Agent end-to-end
 
+> **УЗ на каждом шаге:** см. [`05-who-runs-what.md`](05-who-runs-what.md) §B.  
+> Кратко: upload=`svcsec` → approve/install=`svcsecadmin` → helpers=`poinstaller` → conf=`editor1`.
+
 Документ предполагает, что базовая RBAC-настройка уже выполнена вручную:
 - РЕД ОС 8 → [02-redos8-manual.md](02-redos8-manual.md)
 - Astra SE 1.8 → [03-astra18-manual.md](03-astra18-manual.md)
@@ -9,6 +12,9 @@
 ---
 
 ## 0. Подготовка артефактов (на машине поставщика)
+
+**УЗ на поставщике:** любой оператор поставки (не обязательно УЗ сервера).  
+На сервер файлы попадут только под **svcsec** через SFTP.
 
 Скачайте официальный пакет под вашу ОС:
 
@@ -40,6 +46,8 @@ PROTOCOL=tcp
 ---
 
 ## 1. РОЛЬ svcsec — загрузка в staging
+
+**УЗ: `svcsec`** (SFTP с ключом; не root, не svcsecadmin)
 
 ### 1.1. Подключение
 
@@ -94,7 +102,9 @@ ls -la /opt/install/staging/
 
 ## 2. Переход к svcsecadmin (`super`)
 
-С консоли или разрешённого канала:
+**УЗ: `svcsec` вызывает → сессия идёт как `svcsecadmin`**  
+(SSH напрямую на svcsecadmin — **запрещён**)
+
 
 ```bash
 # от svcsec (если локальный вход разрешён политикой):
@@ -120,6 +130,9 @@ grep svcsec-super /var/log/messages /var/log/syslog 2>/dev/null | tail
 ---
 
 ## 3. РОЛЬ svcsecadmin — проверка, approve, установка, запуск
+
+**УЗ: `svcsecadmin`** (или `root` на консоли при аварии).  
+Не выполнять из-под poinstaller/editor/svcsec.
 
 ### 3.1. Проверка целостности и перенос в approved
 
@@ -253,7 +266,11 @@ ls -la /var/ossec/etc/ossec.conf
 
 ## 4. РОЛЬ poinstall — только helpers (и negative)
 
+**УЗ: `poinstaller`** (группа `poinstall`). Скрипт в approved кладёт **svcsecadmin**.
+
 ### 4.1. Подготовить helper в approved (делает admin)
+
+**УЗ: `svcsecadmin`**
 
 ```bash
 install -o root -g root -m 0750 playbooks/install-wazuh-helpers.sh \
@@ -261,6 +278,8 @@ install -o root -g root -m 0750 playbooks/install-wazuh-helpers.sh \
 ```
 
 ### 4.2. Установка helpers от poinstaller
+
+**УЗ: `poinstaller`**
 
 ```bash
 su - poinstaller -c 'sudo /opt/install/approved/install-wazuh-helpers.sh'
@@ -299,6 +318,8 @@ ausearch -k sudo_exec -ts recent | grep poinstaller | tail
 ---
 
 ## 5. РОЛЬ editor — правка conf и узкий restart
+
+**УЗ: `editor1`** (группа `editor`). Не svcsecadmin — иначе не проверяется разграничение.
 
 ### 5.1. Посмотреть права sudo
 
@@ -355,6 +376,8 @@ grep editor1 /var/log/sudo.log | tail
 ---
 
 ## 6. РОЛЬ timeditor — временный NOPASSWD
+
+**УЗ выдачи: `svcsecadmin`** · **УЗ использования: `editor1` после grant** (группа `timeditor`)
 
 ```bash
 # от svcsecadmin:

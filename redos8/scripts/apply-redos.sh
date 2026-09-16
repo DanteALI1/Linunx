@@ -18,7 +18,13 @@ visudo -cf /etc/sudoers.d/00-rbac-common
 visudo -cf /etc/sudoers.d/10-rbac-poinstall-redos
 visudo -cf /etc/sudoers.d/20-rbac-editor-wazuh-redos
 
+install -o root -g root -m 0640 "$ROOT/common/audit/00-base.rules" /etc/audit/rules.d/00-base.rules
+install -o root -g root -m 0640 "$ROOT/common/audit/10-hardening-common.rules" /etc/audit/rules.d/10-hardening-common.rules
+install -o root -g root -m 0640 "$ROOT/common/audit/10-hardening-syscalls.rules" /etc/audit/rules.d/10-hardening-syscalls.rules
+install -o root -g root -m 0640 "$ROOT/redos8/audit/11-hardening-redos.rules" /etc/audit/rules.d/11-hardening-redos.rules
 install -o root -g root -m 0640 "$ROOT/redos8/audit/50-rbac-redos.rules" /etc/audit/rules.d/50-rbac-redos.rules
+# 99-finalize (-e 2) — только после отладки вручную:
+# install -m 0640 "$ROOT/common/audit/99-finalize.rules.example" /etc/audit/rules.d/99-finalize.rules
 augenrules --load 2>/dev/null || service auditd restart || systemctl restart auditd
 
 install -d /etc/ssh/sshd_config.d

@@ -1,0 +1,24 @@
+## /etc/audit/rules.d/11-hardening-redos.rules
+## УЗ: svcsecadmin | РЕД ОС 8 — пакетный менеджер, SELinux, firewalld, fapolicyd
+
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/dnf -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/yum -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/rpm -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/bin/rpm -F key=pkg_mgr
+
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/semanage -F key=selinux_admin
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/setsebool -F key=selinux_admin
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/setenforce -F key=selinux_admin
+-w /etc/selinux -p wa -k MAC_policy
+-w /usr/share/selinux -p wa -k MAC_policy
+
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/firewall-cmd -F key=firewall
+-w /etc/firewalld -p wa -k firewall
+
+-w /etc/fapolicyd -p wa -k fapolicyd
+-w /etc/crypto-policies -p wa -k crypto_policy
+-w /etc/sysconfig/network -p wa -k network_mod
+-w /etc/sysconfig/network-scripts -p wa -k network_mod
+
+-w /usr/lib/systemd/system -p wa -k systemd_units
+-w /etc/systemd/system -p wa -k systemd_units

@@ -43,12 +43,15 @@
 | Документ | Содержание |
 |----------|------------|
 | [how-it-works](docs/manual/01-how-it-works.md) | Слои СЗИ, роли, sudoers/audit/MAC на пальцах |
-| [РЕД ОС 8 вручную](docs/manual/02-redos8-manual.md) | Этапы 0–12: пакеты → SELinux → УЗ → ACL → sudo → SSH → audit → timer |
+| [РЕД ОС 8 вручную](docs/manual/02-redos8-manual.md) | Этапы 0–12 с полем **УЗ:** на каждом шаге |
 | [Astra SE 1.8 вручную](docs/manual/03-astra18-manual.md) | То же для PARSEC + audisp-parsec + apt |
 | [Wazuh вручную](docs/manual/04-wazuh-manual.md) | Upload → approve → install → sudoedit → negative tests |
+| [Кто под какой УЗ](docs/manual/05-who-runs-what.md) | Матрица этап → учётная запись |
+| [Каталог auditd](docs/manual/06-auditd-rules-catalog.md) | Все правила auditd с описанием ключей (CIS/STIG/RBAC/практики) |
 
 Скрипты `apply-*.sh` — автоматизация того же порядка; для обучения и аудита
 конфигурации используйте ручной путь.
+
 
 ## Быстрый старт (скрипты)
 
