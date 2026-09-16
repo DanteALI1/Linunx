@@ -48,6 +48,11 @@
 | [Wazuh вручную](docs/manual/04-wazuh-manual.md) | Upload → approve → install → sudoedit → negative tests |
 | [Кто под какой УЗ](docs/manual/05-who-runs-what.md) | Матрица этап → учётная запись |
 | [Каталог auditd](docs/manual/06-auditd-rules-catalog.md) | Все правила auditd с описанием ключей (CIS/STIG/RBAC/практики) |
+| [Готовые rules](docs/manual/07-audit-ready-files.md) | Один файл на ОС: правило + краткий комментарий |
+
+Готовые к копированию:
+- `redos8/audit/READY-all-rules.rules`
+- `astra18/audit/READY-all-rules.rules`
 
 Скрипты `apply-*.sh` — автоматизация того же порядка; для обучения и аудита
 конфигурации используйте ручной путь.

@@ -1,0 +1,224 @@
+## ============================================================================
+## ГОТОВЫЙ НАБОР auditd — Astra Linux SE 1.8
+## Установка (УЗ: root или svcsecadmin, консоль):
+##   cp READY-all-rules.rules /etc/audit/rules.d/50-rbac-all.rules
+##   # audisp-parsec: см. astra18/audit/audisp-parsec.conf
+##   augenrules --load
+##   systemctl enable --now auditd
+##
+## Строка с # — описание. Строка без # — правило.
+## После отладки раскомментируйте последнюю строку (-e 2).
+## ============================================================================
+
+## --- буфер audit ---
+# Размер очереди событий в ядре
+-b 8192
+# При сбое audit — printk
+-f 1
+
+## --- время ---
+# Меняют системное время
+-a always,exit -F arch=b64 -S adjtimex,settimeofday,clock_settime -F key=time_change
+-a always,exit -F arch=b32 -S adjtimex,settimeofday,clock_settime -F key=time_change
+-w /etc/localtime -p wa -k time_change
+
+## --- имя хоста ---
+# Меняют hostname/domainname и баннеры
+-a always,exit -F arch=b64 -S sethostname,setdomainname -F key=system_locale
+-a always,exit -F arch=b32 -S sethostname,setdomainname -F key=system_locale
+-w /etc/hostname -p wa -k system_locale
+-w /etc/hosts -p wa -k system_locale
+-w /etc/issue -p wa -k system_locale
+-w /etc/issue.net -p wa -k system_locale
+
+## --- учётные записи и пароли ---
+# Меняют passwd/group/shadow
+-w /etc/passwd -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/security/opasswd -p wa -k identity
+-w /etc/subuid -p wa -k identity
+-w /etc/subgid -p wa -k identity
+
+## --- утилиты управления УЗ ---
+# Запуск утилит создания/смены УЗ и групп
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/useradd -F key=user_mod
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/userdel -F key=user_mod
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/usermod -F key=user_mod
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/groupadd -F key=user_mod
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/groupdel -F key=user_mod
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/groupmod -F key=user_mod
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/passwd -F key=user_mod
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/gpasswd -F key=user_mod
+
+## --- сеть / DNS ---
+# Меняют DNS, сеть Debian/Astra, fstab
+-w /etc/resolv.conf -p wa -k network_mod
+-w /etc/nsswitch.conf -p wa -k network_mod
+-w /etc/hosts.allow -p wa -k network_mod
+-w /etc/hosts.deny -p wa -k network_mod
+-w /etc/network -p wa -k network_mod
+-w /etc/netplan -p wa -k network_mod
+-w /etc/fstab -p wa -k mounts
+
+## --- PAM / входы ---
+# Меняют PAM и журналы сессий
+-w /etc/pam.d -p wa -k pam
+-w /etc/security -p wa -k pam
+-w /var/log/lastlog -p wa -k logins
+-w /var/log/faillock -p wa -k logins
+-w /var/run/faillock -p wa -k logins
+-w /var/run/utmp -p wa -k session
+-w /var/log/wtmp -p wa -k session
+-w /var/log/btmp -p wa -k session
+
+## --- sudo ---
+# Меняют sudoers; запуск sudo/su/visudo
+-w /etc/sudoers -p wa -k scope
+-w /etc/sudoers.d -p wa -k scope
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/visudo -F key=scope
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/sudo -F key=priv_esc
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/su -F key=priv_esc
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/newgrp -F key=priv_esc
+-w /var/log/sudo.log -p wa -k sudo_log
+
+## --- SSH ---
+# Меняют sshd и ключи
+-w /etc/ssh/sshd_config -p wa -k sshd_config
+-w /etc/ssh/sshd_config.d -p wa -k sshd_config
+-w /root/.ssh -p wa -k ssh_keys
+-w /home/svcsec/.ssh -p wa -k ssh_keys
+
+## --- cron / at ---
+# Меняют задания планировщика
+-w /etc/cron.allow -p wa -k cron
+-w /etc/cron.deny -p wa -k cron
+-w /etc/cron.d -p wa -k cron
+-w /etc/cron.daily -p wa -k cron
+-w /etc/cron.hourly -p wa -k cron
+-w /etc/cron.weekly -p wa -k cron
+-w /etc/cron.monthly -p wa -k cron
+-w /etc/crontab -p wa -k cron
+-w /var/spool/cron -p wa -k cron
+-w /var/spool/cron/crontabs -p wa -k cron
+-w /etc/anacrontab -p wa -k cron
+-w /etc/at.allow -p wa -k cron
+-w /etc/at.deny -p wa -k cron
+
+## --- systemd ---
+# Меняют unit’ы; запуск systemctl
+-w /etc/systemd/system -p wa -k systemd_units
+-w /lib/systemd/system -p wa -k systemd_units
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/systemctl -F key=systemctl
+-a always,exit -F arch=b64 -S execve -F path=/bin/systemctl -F key=systemctl
+
+## --- PARSEC / Astra ---
+# Меняют мандатную политику и конфиг Astra
+-w /etc/parsec -p wa -k MAC_policy
+-w /etc/astra -p wa -k astra_config
+# Запуск утилит назначения меток/capabilities
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/pdpl-user -F key=parsec_admin
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/usercaps -F key=parsec_admin
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/pdp-ls -F key=parsec_admin
+
+## --- пакетный менеджер (Astra) ---
+# Установка/удаление пакетов apt/dpkg
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/apt -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/apt-get -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/aptitude -F key=pkg_mgr
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/dpkg -F key=pkg_mgr
+
+## --- firewall ---
+# Меняют nftables/iptables
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/nft -F key=firewall
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/iptables -F key=firewall
+-w /etc/nftables.conf -p wa -k firewall
+
+## --- crypto / linker ---
+# Сертификаты и подмена динамического линкера
+-w /etc/ssl -p wa -k crypto_policy
+-w /etc/pki -p wa -k crypto_policy
+-w /etc/ld.so.conf -p wa -k linker
+-w /etc/ld.so.conf.d -p wa -k linker
+-w /etc/ld.so.preload -p wa -k linker
+
+## --- модули ядра ---
+# Загрузка/выгрузка модулей
+-a always,exit -F arch=b64 -S init_module,finit_module,delete_module -F key=modules
+-a always,exit -F arch=b32 -S init_module,finit_module,delete_module -F key=modules
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/kmod -F key=modules
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/insmod -F key=modules
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/rmmod -F key=modules
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/modprobe -F key=modules
+-w /etc/modprobe.d -p wa -k modules
+
+## --- mount / delete / rights / access ---
+# Монтирование
+-a always,exit -F arch=b64 -S mount,umount2 -F auid>=1000 -F auid!=unset -F key=mounts
+-a always,exit -F arch=b32 -S mount,umount,umount2 -F auid>=1000 -F auid!=unset -F key=mounts
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/mount -F key=mounts
+-a always,exit -F arch=b64 -S execve -F path=/usr/bin/umount -F key=mounts
+# Удаление/rename
+-a always,exit -F arch=b64 -S unlink,unlinkat,rename,renameat,renameat2 -F auid>=1000 -F auid!=unset -F key=delete
+-a always,exit -F arch=b32 -S unlink,unlinkat,rename,renameat -F auid>=1000 -F auid!=unset -F key=delete
+# chmod/chown/xattr
+-a always,exit -F arch=b64 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
+-a always,exit -F arch=b32 -S chmod,fchmod,fchmodat -F auid>=1000 -F auid!=unset -F key=perm_mod
+-a always,exit -F arch=b64 -S chown,fchown,lchown,fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
+-a always,exit -F arch=b32 -S chown,fchown,lchown,fchownat -F auid>=1000 -F auid!=unset -F key=perm_mod
+-a always,exit -F arch=b64 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
+-a always,exit -F arch=b32 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=unset -F key=perm_mod
+# Отказы в доступе к файлам
+-a always,exit -F arch=b64 -S creat,open,openat,openat2,truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
+-a always,exit -F arch=b32 -S creat,open,openat,truncate,ftruncate -F exit=-EACCES -F auid>=1000 -F auid!=unset -F key=access
+-a always,exit -F arch=b64 -S creat,open,openat,openat2,truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
+-a always,exit -F arch=b32 -S creat,open,openat,truncate,ftruncate -F exit=-EPERM -F auid>=1000 -F auid!=unset -F key=access
+
+## --- техники атак ---
+# ptrace / personality / bpf / чужая память / reboot
+-a always,exit -F arch=b64 -S ptrace -F auid>=1000 -F auid!=unset -F key=ptrace
+-a always,exit -F arch=b32 -S ptrace -F auid>=1000 -F auid!=unset -F key=ptrace
+-a always,exit -F arch=b64 -S personality -F key=evasion
+-a always,exit -F arch=b32 -S personality -F key=evasion
+-a always,exit -F arch=b64 -S bpf -F key=bpf
+-a always,exit -F arch=b64 -S process_vm_readv,process_vm_writev -F auid>=1000 -F auid!=unset -F key=proc_mem
+-a always,exit -F arch=b64 -S reboot,kexec_load,kexec_file_load -F key=reboot
+
+## --- boot / local bins ---
+-w /boot -p wa -k boot_integrity
+-w /usr/local/sbin -p wa -k local_bin
+-w /usr/local/bin -p wa -k local_bin
+-w /etc/rc.local -p wa -k startup
+
+## --- защита audit ---
+-w /etc/audit -p wa -k audit_cfg
+-w /var/log/audit -p wa -k audit_log
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/auditctl -F key=audit_tools
+-a always,exit -F arch=b64 -S execve -F path=/usr/sbin/augenrules -F key=audit_tools
+
+## --- RBAC: поставка и приложения ---
+# Staging / approved / apps
+-w /opt/install/staging -p rwa -k install_staging
+-w /opt/install/approved -p rwa -k install_approved
+-w /opt/apps -p wa -k apps_write
+-w /var/opt/apps -p wa -k apps_data
+# super / approve / timeditor
+-a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/svcsec-super -F key=svcsec_super
+-a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/approve-artifact -F key=artifact_approve
+-a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/timeditor-grant -F key=timeditor_grant
+-a always,exit -F arch=b64 -S execve -F path=/usr/local/sbin/timeditor-expire -F key=timeditor_expire
+-w /var/lib/rbac-timers -p wa -k timeditor_state
+
+## --- Wazuh ---
+# Конфиг / бинарники / логи / очереди агента
+-w /var/ossec/etc -p wa -k wazuh_conf
+-w /var/ossec/etc/shared -p wa -k wazuh_shared
+-w /var/ossec/bin -p wa -k wazuh_bin
+-w /var/ossec/logs/ossec.log -p wa -k wazuh_log
+-w /var/ossec/queue -p wa -k wazuh_queue
+-a always,exit -F arch=b64 -S execve -F path=/var/ossec/bin/wazuh-control -F key=wazuh_control
+
+## --- финал (раскомментировать ПОСЛЕ отладки) ---
+# Запретить смену правил audit до reboot
+# -e 2
