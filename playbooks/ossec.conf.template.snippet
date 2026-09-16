@@ -1,0 +1,17 @@
+<!--
+  Шаблон фрагмента для первичной настройки / последующего sudoedit.
+  Полный ossec.conf поставляется пакетом Wazuh; редактор меняет только нужные узлы.
+-->
+<ossec_config>
+  <client>
+    <server>
+      <address>MANAGER_IP_OR_DNS</address>
+      <port>1514</port>
+      <protocol>tcp</protocol>
+    </server>
+    <config-profile>default</config-profile>
+    <notify_time>10</notify_time>
+    <time-reconnect>60</time-reconnect>
+    <auto_restart>yes</auto_restart>
+  </client>
+</ossec_config>

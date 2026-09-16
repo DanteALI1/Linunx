@@ -1,0 +1,21 @@
+# /etc/sudoers.d/20-rbac-editor-wazuh-redos
+# РЕД ОС 8 — editor/timeditor: sudoedit + узкий restart wazuh-agent
+# visudo -cf /etc/sudoers.d/20-rbac-editor-wazuh-redos
+#
+# Общий systemctl НЕ выдаётся — только перечисленные команды.
+
+Cmnd_Alias WAZUH_SUDOEDIT = sudoedit /var/ossec/etc/ossec.conf, \
+    sudoedit /var/ossec/etc/local_internal_options.conf
+
+Cmnd_Alias APP_SUDOEDIT = sudoedit /etc/opt/apps/*/*, sudoedit /etc/opt/apps/*/*/*
+
+Cmnd_Alias WAZUH_AGENT_CTL = /usr/bin/systemctl restart wazuh-agent, \
+    /usr/bin/systemctl status wazuh-agent, \
+    /bin/systemctl restart wazuh-agent, \
+    /bin/systemctl status wazuh-agent
+
+%editor ALL=(root) WAZUH_SUDOEDIT, APP_SUDOEDIT
+%editor ALL=(root) WAZUH_AGENT_CTL
+
+%timeditor ALL=(root) NOPASSWD: WAZUH_SUDOEDIT, APP_SUDOEDIT
+%timeditor ALL=(root) NOPASSWD: WAZUH_AGENT_CTL

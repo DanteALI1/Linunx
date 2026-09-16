@@ -1,0 +1,44 @@
+#!/bin/bash
+# svcsec-super — UX-переход svcsec → svcsecadmin
+# Вызывается ТОЛЬКО через sudoers от пользователя svcsec:
+#   svcsec ALL=(svcsecadmin) NOPASSWD: /usr/local/sbin/svcsec-super
+#
+# Не является СЗИ сам по себе: контроль — sudoers + отсутствие SSH у svcsecadmin.
+# Не даёт shell: запускает интерактивную сессию только как svcsecadmin login shell
+# либо выполняет одну команду из whitelist-обёртки.
+
+set -euo pipefail
+
+AUDIT_TAG="svcsec_super"
+LOG_TAG="svcsec-super"
+WRAPPER_BIN="/usr/local/sbin/svcsecadmin-session"
+
+log_audit() {
+  local msg="$1"
+  logger -t "$LOG_TAG" -- "$msg"
+  if command -v auditctl >/dev/null 2>&1; then
+    # best-effort user-space mark for ausearch
+    echo "type=USER msg=audit($(date +%s.%N):0): pid=$$ uid=$(id -u) auid=$(id -u) msg='$msg key=$AUDIT_TAG'" \
+      >> /var/log/svcsec-super.audit 2>/dev/null || true
+  fi
+}
+
+if [[ "$(id -un)" != "svcsecadmin" ]]; then
+  echo "ERROR: svcsec-super must run as svcsecadmin (via sudo -u svcsecadmin)." >&2
+  exit 1
+fi
+
+# Запрет вложенного sudo/shell-escape: сессия только через контролируемый wrapper
+if [[ ! -x "$WRAPPER_BIN" ]]; then
+  echo "ERROR: missing $WRAPPER_BIN" >&2
+  exit 1
+fi
+
+log_audit "svcsec invoked super; session starting as svcsecadmin"
+
+# Если переданы аргументы — выполнить одну команду через session wrapper
+if [[ $# -gt 0 ]]; then
+  exec "$WRAPPER_BIN" --exec "$@"
+fi
+
+exec "$WRAPPER_BIN" --interactive
