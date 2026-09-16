@@ -1,5 +1,10 @@
 # Пошаговая инструкция: Astra Linux Special Edition 1.8
 
+> **Подробная ручная настройка с пояснениями:**  
+> [`manual/03-astra18-manual.md`](manual/03-astra18-manual.md)  
+> (теория слоёв: [`manual/01-how-it-works.md`](manual/01-how-it-works.md))
+
+Краткий путь через скрипты — ниже.  
 PARSEC (МРД/МКЦ), audisp-parsec, auditd, sudo.
 
 > Имена утилит меток и режимов MAC сверяйте с руководством администратора
