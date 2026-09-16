@@ -1,5 +1,10 @@
 # Пошаговая инструкция: РЕД ОС 8
 
+> **Подробная ручная настройка с пояснениями:**  
+> [`manual/02-redos8-manual.md`](manual/02-redos8-manual.md)  
+> (теория слоёв: [`manual/01-how-it-works.md`](manual/01-how-it-works.md))
+
+Краткий путь через скрипты — ниже.  
 SELinux **enforcing**, auditd, sudo, ориентиры ФСТЭК — см. также [`05-fstek-notes.md`](05-fstek-notes.md).
 
 ## 0. Предпосылки

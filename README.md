@@ -33,13 +33,29 @@
 | **editor** | `sudoedit` whitelist (в т.ч. `ossec.conf`) | Нет root-shell, visudo, usermod |
 | **timeditor** | Как editor + NOPASSWD, TTL 8ч | То же + авто-снятие группы |
 
-## Быстрый старт
+## Ручная настройка (подробно)
+
+Поэтапная настройка сервера **без** «просто запусти скрипт» — с примерами и
+объяснением, как работает каждый слой:
+
+→ **[`docs/manual/README.md`](docs/manual/README.md)**
+
+| Документ | Содержание |
+|----------|------------|
+| [how-it-works](docs/manual/01-how-it-works.md) | Слои СЗИ, роли, sudoers/audit/MAC на пальцах |
+| [РЕД ОС 8 вручную](docs/manual/02-redos8-manual.md) | Этапы 0–12: пакеты → SELinux → УЗ → ACL → sudo → SSH → audit → timer |
+| [Astra SE 1.8 вручную](docs/manual/03-astra18-manual.md) | То же для PARSEC + audisp-parsec + apt |
+| [Wazuh вручную](docs/manual/04-wazuh-manual.md) | Upload → approve → install → sudoedit → negative tests |
+
+Скрипты `apply-*.sh` — автоматизация того же порядка; для обучения и аудита
+конфигурации используйте ручной путь.
+
+## Быстрый старт (скрипты)
 
 1. Выберите контур ОС: `docs/01-redos8-guide.md` **или** `docs/02-astra18-guide.md`.
-2. Разверните базовые каталоги и роли (скрипт bootstrap).
-3. Примените sudoers / audit / sshd / MAC.
-4. Пройдите [`docs/03-wazuh-e2e.md`](docs/03-wazuh-e2e.md).
-5. Прогоните [`tests/`](tests/) и зафиксируйте ausearch.
+2. Разверните базовые каталоги и роли (`./redos8/scripts/apply-redos.sh` или Astra-аналог).
+3. Пройдите [`docs/03-wazuh-e2e.md`](docs/03-wazuh-e2e.md) или ручной [`docs/manual/04-wazuh-manual.md`](docs/manual/04-wazuh-manual.md).
+4. Прогоните [`tests/`](tests/) и зафиксируйте ausearch.
 
 ## Принципы СЗИ (обязательные)
 
